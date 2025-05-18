@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>デモ ログイン/サインアップ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- reCAPTCHA APIスクリプト -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <style>
+        /* :root と @media (prefers-color-scheme: dark) の定義は前回と同じなので省略しません */
+        :root {
+            --primary-color: #007bff;
+            --page-bg: #f8f9fa;
+            --container-bg: #ffffff;
+            --text-color: #212529;
+            --secondary-text-color: #6c757d;
+            --border-color: #ced4da;
+            --input-bg: #ffffff;
+            --button-text-color: #ffffff;
+            --toggle-button-border: #ddd;
+            --toggle-button-text: var(--secondary-text-color);
+            --toggle-button-hover-bg: #e9ecef;
+            --toggle-button-active-bg: var(--primary-color);
+            --toggle-button-active-text: var(--button-text-color);
+            --submit-button-bg: var(--primary-color);
+            --submit-button-hover-bg: #0056b3;
+            --submit-button-text: var(--button-text-color);
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --focus-shadow-color: rgba(0, 123, 255, 0.25);
+            --success-bg: #e6ffed;
+            --success-border: #b8e6c3;
+            --success-text: #28a745;
+            --error-text-color: #dc3545; /* エラーメッセージ用 */
+            --font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+            --border-radius: 8px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary-color: #0d6efd;
+                --page-bg: #121212;
+                --container-bg: #1e1e1e;
+                --text-color: #e9ecef;
+                --secondary-text-color: #adb5bd;
+                --border-color: #495057;
+                --input-bg: #2b2b2b;
+                --toggle-button-border: #495057;
+                --toggle-button-hover-bg: #343a40;
+                --submit-button-hover-bg: #0a58ca;
+                --shadow-color: rgba(0, 0, 0, 0.4);
+                --focus-shadow-color: rgba(13, 110, 253, 0.35);
+                --success-bg: #0f5132;
+                --success-border: #146c43;
+                --success-text: #75b798;
+                --error-text-color: #f8d7da; /* ダークモードのエラー文字 */
+            }
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--page-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+            opacity: 0;
+            animation: fadeInPage 0.8s ease-out forwards;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        @keyframes fadeInPage {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .container {
+            background-color: var(--container-bg);
+            padding: 30px 40px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 15px var(--shadow-color);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        @keyframes fadeInContent {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .toggle-buttons {
+            display: flex;
+            margin-bottom: 25px;
+            border: 1px solid var(--toggle-button-border);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            transition: border-color 0.3s ease;
+        }
+
+        .toggle-buttons button {
+            flex: 1;
+            padding: 12px;
+            background-color: var(--container-bg);
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: var(--toggle-button-text);
+            font-family: var(--font-family);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            outline: none;
+        }
+
+        .toggle-buttons button:first-child {
+            border-right: 1px solid var(--toggle-button-border);
+            transition: border-color 0.3s ease;
+        }
+        
+        .toggle-buttons button.active {
+            background-color: var(--toggle-button-active-bg);
+            color: var(--toggle-button-active-text);
+        }
+
+        .toggle-buttons button:not(.active):hover {
+            background-color: var(--toggle-button-hover-bg);
+        }
+
+        h2 {
+            color: var(--text-color);
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-weight: 500;
+            font-family: var(--font-family);
+            transition: color 0.3s ease;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--secondary-text-color);
+            font-weight: 500;
+            font-size: 14px;
+            font-family: var(--font-family);
+            transition: color 0.3s ease;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            box-sizing: border-box;
+            font-size: 16px;
+            font-family: var(--font-family);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem var(--focus-shadow-color);
+            outline: none;
+        }
+
+        /* reCAPTCHAのスタイリング */
+        .g-recaptcha-container { /* reCAPTCHAとエラーメッセージをグループ化するコンテナ */
+            margin-bottom: 15px; /* 送信ボタンとの間隔 */
+            display: flex;
+            flex-direction: column; /* reCAPTCHAとエラーを縦に並べる */
+            align-items: center; /* 中央揃え */
+        }
+        .g-recaptcha {
+            /* Googleがウィジェットのサイズを制御するため、基本的にはマージン程度 */
+            /* transform: scale(0.9); transform-origin: center center; /* 必要なら縮小 */
+        }
+        .recaptcha-error-message {
+            display: none; /* 初期非表示 */
+            color: var(--error-text-color);
+            font-size: 12px;
+            margin-top: 5px;
+            width: 100%; /* エラーメッセージの幅を確保 */
+            text-align: center; /* エラーメッセージを中央揃え */
+            transition: color 0.3s ease;
+        }
+
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--submit-button-bg);
+            color: var(--submit-button-text);
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            font-family: var(--font-family);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover {
+            background-color: var(--submit-button-hover-bg);
+        }
+
+        .disclaimer {
+            font-size: 12px;
+            color: var(--secondary-text-color);
+            margin-top: 20px;
+            line-height: 1.6;
+            font-family: var(--font-family);
+            transition: color 0.3s ease;
+        }
+
+        .success-message {
+            margin-top: 20px;
+            padding: 12px;
+            background-color: var(--success-bg);
+            color: var(--success-text);
+            border: 1px solid var(--success-border);
+            border-radius: var(--border-radius);
+            opacity: 0;
+            display: none;
+            font-weight: 500;
+            font-family: var(--font-family);
+            transition: opacity 0.5s ease-in-out, background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .success-message.show {
+            display: block;
+            opacity: 1;
+        }
+        
+        .fade-in-item {
+            opacity: 0;
+            animation-name: fadeInContent;
+            animation-duration: 0.5s;
+            animation-timing-function: ease-out;
+            animation-fill-mode: forwards;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container fade-in-item" style="animation-delay: 0.1s;">
+        <div class="toggle-buttons fade-in-item" style="animation-delay: 0.3s;">
+            <button id="loginToggle" class="active">ログイン</button>
+            <button id="signupToggle">サインアップ</button>
+        </div>
+
+        <h2 id="formTitle" class="fade-in-item" style="animation-delay: 0.4s;">ログイン</h2>
+
+        <form id="authForm">
+            <div class="form-group fade-in-item" style="animation-delay: 0.5s;">
+                <label for="email">メールアドレス</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            <div class="form-group fade-in-item" style="animation-delay: 0.6s;">
+                <label for="password">パスワード</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <!-- reCAPTCHA表示エリア -->
+            <div class="g-recaptcha-container fade-in-item" style="animation-delay: 0.65s;">
+                <div class="g-recaptcha" data-sitekey="6LeIxAcTAAAAAJcZVRqyHxTMc4H3gG15n99q_ua_"></div>
+                <!-- 上記の data-sitekey はご自身のキーに置き換えてください -->
+                <div id="recaptchaError" class="recaptcha-error-message">reCAPTCHAをチェックしてください。</div>
+            </div>
+
+            <button type="submit" id="submitButton" class="submit-btn fade-in-item" style="animation-delay: 0.7s;">ログイン</button>
+        </form>
+
+        <p class="disclaimer fade-in-item" style="animation-delay: 0.8s;">
+            このサイトはデモなので、クラウドには保存されません。ご安心ください。<br>
+            reCAPTCHAはボット対策のためのデモ機能です。(実際の検証はサーバーサイドで行われます)
+        </p>
+
+        <div id="successMessage" class="success-message">
+            <!-- メッセージはJSで設定 -->
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginToggle = document.getElementById('loginToggle');
+            const signupToggle = document.getElementById('signupToggle');
+            const formTitle = document.getElementById('formTitle');
+            const submitButton = document.getElementById('submitButton');
+            const authForm = document.getElementById('authForm');
+            const successMessage = document.getElementById('successMessage');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const recaptchaError = document.getElementById('recaptchaError');
+
+            let currentMode = 'login'; 
+
+            function updateFormMode() {
+                if (currentMode === 'login') {
+                    formTitle.textContent = 'ログイン';
+                    submitButton.textContent = 'ログイン';
+                    loginToggle.classList.add('active');
+                    signupToggle.classList.remove('active');
+                } else {
+                    formTitle.textContent = 'サインアップ';
+                    submitButton.textContent = 'サインアップ';
+                    signupToggle.classList.add('active');
+                    loginToggle.classList.remove('active');
+                }
+                authForm.reset();
+                if (typeof grecaptcha !== 'undefined' && grecaptcha.reset) {
+                    try { // reCAPTCHAウィジェットがまだレンダリングされていない場合にエラーになるのを防ぐ
+                        grecaptcha.reset();
+                    } catch (e) {
+                        console.warn("reCAPTCHA reset failed, widget might not be ready.");
+                    }
+                }
+                recaptchaError.style.display = 'none';
+                successMessage.classList.remove('show');
+                successMessage.style.display = 'none'; 
+                emailInput.disabled = false;
+                passwordInput.disabled = false;
+                submitButton.disabled = false;
+            }
+
+            loginToggle.addEventListener('click', () => {
+                if (currentMode !== 'login') {
+                    currentMode = 'login';
+                    updateFormMode();
+                }
+            });
+
+            signupToggle.addEventListener('click', () => {
+                if (currentMode !== 'signup') {
+                    currentMode = 'signup';
+                    updateFormMode();
+                }
+            });
+
+            authForm.addEventListener('submit', (event) => {
+                event.preventDefault(); 
+
+                const email = emailInput.value;
+                const password = passwordInput.value;
+                const recaptchaResponse = (typeof grecaptcha !== 'undefined') ? grecaptcha.getResponse() : 'test_mode_no_grecaptcha'; // grecaptcha が未定義の場合のフォールバック
+
+                recaptchaError.style.display = 'none'; // 一旦エラーを隠す
+
+                if (!email || !password) {
+                    alert('メールアドレスとパスワードを入力してください。');
+                    return;
+                }
+                if (!email.includes('@')) {
+                     alert('有効なメールアドレスを入力してください。');
+                    return;
+                }
+                // reCAPTCHAのチェック (grecaptchaオブジェクトが存在する場合のみ)
+                if (typeof grecaptcha !== 'undefined' && recaptchaResponse.length === 0) {
+                    recaptchaError.style.display = 'block';
+                    return;
+                }
+
+
+                let messageText = '';
+                if (currentMode === 'login') {
+                    messageText = 'ログインが完了しました！';
+                } else {
+                    messageText = 'サインアップが完了しました！';
+                }
+                
+                successMessage.textContent = messageText;
+                successMessage.style.display = 'block'; 
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => { 
+                         successMessage.classList.add('show');
+                    });
+                });
+
+                emailInput.disabled = true;
+                passwordInput.disabled = true;
+                submitButton.disabled = true;
+                // reCAPTCHAも操作不可にする（実際には送信後はページ遷移などが多い）
+            });
+
+            updateFormMode();
+        });
+    </script>
+
+</body>
+</html>
