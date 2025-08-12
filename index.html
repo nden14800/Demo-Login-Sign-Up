@@ -36,6 +36,7 @@
             --error-text-color: #dc3545; /* エラーメッセージ用 */
             --font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
             --border-radius: 8px;
+            --loader-color: #007bff;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -56,6 +57,7 @@
                 --success-border: #146c43;
                 --success-text: #75b798;
                 --error-text-color: #f8d7da; /* ダークモードのエラー文字 */
+                --loader-color: #1a73e8;
             }
         }
 
@@ -89,6 +91,8 @@
             max-width: 400px;
             text-align: center;
             transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            position: relative; /* スピナーを重ねるための基準 */
+            overflow: hidden; /* スピナーが角丸からはみ出ないように */
         }
 
         @keyframes fadeInContent {
@@ -175,27 +179,21 @@
             outline: none;
         }
 
-        /* reCAPTCHAのスタイリング */
-        .g-recaptcha-container { /* reCAPTCHAとエラーメッセージをグループ化するコンテナ */
-            margin-bottom: 15px; /* 送信ボタンとの間隔 */
+        .g-recaptcha-container {
+            margin-bottom: 15px;
             display: flex;
-            flex-direction: column; /* reCAPTCHAとエラーを縦に並べる */
-            align-items: center; /* 中央揃え */
-        }
-        .g-recaptcha {
-            /* Googleがウィジェットのサイズを制御するため、基本的にはマージン程度 */
-            /* transform: scale(0.9); transform-origin: center center; /* 必要なら縮小 */
+            flex-direction: column;
+            align-items: center;
         }
         .recaptcha-error-message {
-            display: none; /* 初期非表示 */
+            display: none;
             color: var(--error-text-color);
             font-size: 12px;
             margin-top: 5px;
-            width: 100%; /* エラーメッセージの幅を確保 */
-            text-align: center; /* エラーメッセージを中央揃え */
+            width: 100%;
+            text-align: center;
             transition: color 0.3s ease;
         }
-
 
         .submit-btn {
             width: 100%;
@@ -251,11 +249,67 @@
             animation-timing-function: ease-out;
             animation-fill-mode: forwards;
         }
+
+        /* === ローディングスピナーのスタイル ここから === */
+        .loader-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.7); /* 半透明の背景 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .loader-container.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .loader-container {
+                background-color: rgba(30, 30, 30, 0.7); /* ダークモード用の半透明背景 */
+            }
+        }
+
+        .loader {
+            width: 60px; /* サイズを調整 */
+            height: 60px;
+            animation: rotate 1s linear infinite;
+            transform-origin: center center;
+        }
+
+        .loader .path {
+            stroke: var(--loader-color);
+            stroke-linecap: round;
+            stroke-dasharray: 89 150;
+            stroke-dashoffset: 0;
+        }
+
+        @keyframes rotate {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        /* === ローディングスピナーのスタイル ここまで === */
+
     </style>
 </head>
 <body>
 
     <div class="container fade-in-item" style="animation-delay: 0.1s;">
+        <!-- ローディングスピナーを追加 -->
+        <div id="loaderContainer" class="loader-container">
+            <svg class="loader" viewBox="0 0 50 50">
+                <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="2.5"></circle>
+            </svg>
+        </div>
+
         <div class="toggle-buttons fade-in-item" style="animation-delay: 0.3s;">
             <button id="loginToggle" class="active">ログイン</button>
             <button id="signupToggle">サインアップ</button>
@@ -273,10 +327,8 @@
                 <input type="password" id="password" name="password" required>
             </div>
 
-            <!-- reCAPTCHA表示エリア -->
             <div class="g-recaptcha-container fade-in-item" style="animation-delay: 0.65s;">
                 <div class="g-recaptcha" data-sitekey="6Lf_hz4rAAAAAMLfawjLSSH0qRJyCnOnX9OuJBtR"></div>
-                <!-- 上記の data-sitekey はご自身のキーに置き換えてください -->
                 <div id="recaptchaError" class="recaptcha-error-message">reCAPTCHAをチェックしてください。</div>
             </div>
 
@@ -304,6 +356,7 @@
             const emailInput = document.getElementById('email');
             const passwordInput = document.getElementById('password');
             const recaptchaError = document.getElementById('recaptchaError');
+            const loaderContainer = document.getElementById('loaderContainer'); // スピナーのコンテナを取得
 
             let currentMode = 'login'; 
 
@@ -321,7 +374,7 @@
                 }
                 authForm.reset();
                 if (typeof grecaptcha !== 'undefined' && grecaptcha.reset) {
-                    try { // reCAPTCHAウィジェットがまだレンダリングされていない場合にエラーになるのを防ぐ
+                    try {
                         grecaptcha.reset();
                     } catch (e) {
                         console.warn("reCAPTCHA reset failed, widget might not be ready.");
@@ -333,6 +386,7 @@
                 emailInput.disabled = false;
                 passwordInput.disabled = false;
                 submitButton.disabled = false;
+                loaderContainer.classList.remove('show'); // フォーム切り替え時にスピナーを非表示
             }
 
             loginToggle.addEventListener('click', () => {
@@ -354,9 +408,9 @@
 
                 const email = emailInput.value;
                 const password = passwordInput.value;
-                const recaptchaResponse = (typeof grecaptcha !== 'undefined') ? grecaptcha.getResponse() : 'test_mode_no_grecaptcha'; // grecaptcha が未定義の場合のフォールバック
+                const recaptchaResponse = (typeof grecaptcha !== 'undefined') ? grecaptcha.getResponse() : 'test_mode_no_grecaptcha';
 
-                recaptchaError.style.display = 'none'; // 一旦エラーを隠す
+                recaptchaError.style.display = 'none';
 
                 if (!email || !password) {
                     alert('メールアドレスとパスワードを入力してください。');
@@ -366,32 +420,39 @@
                      alert('有効なメールアドレスを入力してください。');
                     return;
                 }
-                // reCAPTCHAのチェック (grecaptchaオブジェクトが存在する場合のみ)
                 if (typeof grecaptcha !== 'undefined' && recaptchaResponse.length === 0) {
                     recaptchaError.style.display = 'block';
                     return;
                 }
-
-
-                let messageText = '';
-                if (currentMode === 'login') {
-                    messageText = 'ログインが完了しました！';
-                } else {
-                    messageText = 'サインアップが完了しました！';
-                }
                 
-                successMessage.textContent = messageText;
-                successMessage.style.display = 'block'; 
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => { 
-                         successMessage.classList.add('show');
-                    });
-                });
-
+                // --- ローディング処理 ---
+                loaderContainer.classList.add('show'); // スピナーを表示
                 emailInput.disabled = true;
                 passwordInput.disabled = true;
                 submitButton.disabled = true;
-                // reCAPTCHAも操作不可にする（実際には送信後はページ遷移などが多い）
+
+
+                // サーバー通信をシミュレート
+                setTimeout(() => {
+                    loaderContainer.classList.remove('show'); // スピナーを非表示
+
+                    let messageText = '';
+                    if (currentMode === 'login') {
+                        messageText = 'ログインが完了しました！';
+                    } else {
+                        messageText = 'サインアップが完了しました！';
+                    }
+                    
+                    successMessage.textContent = messageText;
+                    successMessage.style.display = 'block'; 
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => { 
+                             successMessage.classList.add('show');
+                        });
+                    });
+
+                    // フォームフィールドとボタンは無効のままにする
+                }, 1500); // 1.5秒の遅延
             });
 
             updateFormMode();
