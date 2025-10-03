@@ -7,8 +7,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- reCAPTCHA APIスクリプト -->
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         /* :root と @media (prefers-color-scheme: dark) の定義 */
         :root {
@@ -179,22 +177,6 @@
             outline: none;
         }
 
-        .g-recaptcha-container {
-            margin-bottom: 15px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .recaptcha-error-message, .passkey-error-message {
-            display: none;
-            color: var(--error-text-color);
-            font-size: 12px;
-            margin-top: 5px;
-            width: 100%;
-            text-align: center;
-            transition: color 0.3s ease;
-        }
-
         .submit-btn, .passkey-btn {
             width: 100%;
             padding: 12px;
@@ -223,7 +205,6 @@
             border: 1px solid var(--passkey-button-border);
         }
         .passkey-btn:hover { background-color: var(--passkey-button-hover-bg); }
-        /* SVGのサイズをCSSで指定 */
         .passkey-btn svg { 
             width: 20px; 
             height: 20px; 
@@ -301,20 +282,25 @@
         @media (prefers-color-scheme: dark) {
             .loader-container { background-color: rgba(30, 30, 30, 0.7); }
         }
+        
         .loader {
-            width: 60px; height: 60px;
+            width: 80px;
+            height: 80px;
             animation: rotate 1s linear infinite;
+            transform-origin: center center;
         }
+
         .loader .path {
             stroke: var(--loader-color);
             stroke-linecap: round;
-            animation: dash 1.5s ease-in-out infinite;
+            stroke-dasharray: 89 150;
+            stroke-dashoffset: 0;
         }
-        @keyframes rotate { 100% { transform: rotate(360deg); } }
-        @keyframes dash {
-            0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
-            50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; }
-            100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
+
+        @keyframes rotate {
+            100% {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
@@ -323,7 +309,7 @@
     <div class="container fade-in-item" style="animation-delay: 0.1s;">
         <div id="loaderContainer" class="loader-container">
             <svg class="loader" viewBox="0 0 50 50">
-                <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="4"></circle>
+                <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="2.5"></circle>
             </svg>
         </div>
 
@@ -344,11 +330,6 @@
             <div id="passwordGroup" class="form-group fade-in-item" style="animation-delay: 0.5s;">
                 <label for="password">パスワード</label>
                 <input type="password" id="password" name="password" required autocomplete="current-password">
-            </div>
-
-            <div id="recaptchaContainer" class="g-recaptcha-container fade-in-item" style="animation-delay: 0.6s;">
-                <div class="g-recaptcha" data-sitekey="6LdJ0yApAAAAAH45O64a51Jpr-wAFMy_y4cN4g5p"></div>
-                <div id="recaptchaError" class="recaptcha-error-message">reCAPTCHAをチェックしてください。</div>
             </div>
 
             <button type="submit" id="submitButton" class="submit-btn fade-in-item" style="animation-delay: 0.7s;">ログイン</button>
@@ -381,8 +362,6 @@
             const emailInput = document.getElementById('email');
             const passwordInput = document.getElementById('password');
             const passwordGroup = document.getElementById('passwordGroup');
-            const recaptchaContainer = document.getElementById('recaptchaContainer');
-            const recaptchaError = document.getElementById('recaptchaError');
             const loaderContainer = document.getElementById('loaderContainer');
             const messageBox = document.getElementById('messageBox');
             const passkeyButton = document.getElementById('passkeyButton');
@@ -418,19 +397,12 @@
                 loginToggle.classList.toggle('active', isLogin);
                 signupToggle.classList.toggle('active', !isLogin);
                 
-                // サインアップ時はreCAPTCHAを必須に（デモとして）
-                recaptchaContainer.style.display = isLogin ? 'none' : 'flex';
-
                 resetFormState();
             };
             
             // フォームの状態をリセット
             const resetFormState = () => {
                 authForm.reset();
-                if (typeof grecaptcha !== 'undefined' && grecaptcha.reset) {
-                    try { grecaptcha.reset(); } catch (e) { console.warn("reCAPTCHA reset failed."); }
-                }
-                recaptchaError.style.display = 'none';
                 messageBox.classList.remove('show', 'success', 'error');
                 
                 emailInput.disabled = false;
@@ -472,7 +444,7 @@
                 }
             });
 
-            // パスワード/reCAPTCHAフォームの送信処理
+            // パスワードフォームの送信処理
             authForm.addEventListener('submit', (event) => {
                 event.preventDefault();
                 const email = emailInput.value;
@@ -487,15 +459,6 @@
                     return;
                 }
 
-                if (currentMode === 'signup') {
-                    const recaptchaResponse = (typeof grecaptcha !== 'undefined') ? grecaptcha.getResponse() : null;
-                    if (recaptchaResponse && recaptchaResponse.length === 0) {
-                        recaptchaError.style.display = 'block';
-                        return;
-                    }
-                }
-                
-                recaptchaError.style.display = 'none';
                 showLoader(true);
 
                 setTimeout(() => {
