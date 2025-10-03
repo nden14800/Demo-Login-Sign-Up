@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>デモ ログイン/サインアップ</title>
+    <title>デモ ログイン/サインアップ (パスキー対応)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <!-- reCAPTCHA APIスクリプト -->
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
-        /* :root と @media (prefers-color-scheme: dark) の定義は前回と同じなので省略しません */
+        /* :root と @media (prefers-color-scheme: dark) の定義 */
         :root {
             --primary-color: #007bff;
             --page-bg: #f8f9fa;
@@ -28,15 +28,20 @@
             --submit-button-bg: var(--primary-color);
             --submit-button-hover-bg: #0056b3;
             --submit-button-text: var(--button-text-color);
+            --passkey-button-bg: #ffffff;
+            --passkey-button-hover-bg: #f8f9fa;
+            --passkey-button-text: #212529;
+            --passkey-button-border: #ced4da;
             --shadow-color: rgba(0, 0, 0, 0.1);
             --focus-shadow-color: rgba(0, 123, 255, 0.25);
             --success-bg: #e6ffed;
             --success-border: #b8e6c3;
             --success-text: #28a745;
-            --error-text-color: #dc3545; /* エラーメッセージ用 */
+            --error-text-color: #dc3545;
             --font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
             --border-radius: 8px;
             --loader-color: #007bff;
+            --divider-color: #e0e0e0;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -51,13 +56,18 @@
                 --toggle-button-border: #495057;
                 --toggle-button-hover-bg: #343a40;
                 --submit-button-hover-bg: #0a58ca;
+                --passkey-button-bg: #2b2b2b;
+                --passkey-button-hover-bg: #343a40;
+                --passkey-button-text: #e9ecef;
+                --passkey-button-border: #495057;
                 --shadow-color: rgba(0, 0, 0, 0.4);
                 --focus-shadow-color: rgba(13, 110, 253, 0.35);
                 --success-bg: #0f5132;
                 --success-border: #146c43;
                 --success-text: #75b798;
-                --error-text-color: #f8d7da; /* ダークモードのエラー文字 */
+                --error-text-color: #f8d7da;
                 --loader-color: #1a73e8;
+                --divider-color: #495057;
             }
         }
 
@@ -91,13 +101,8 @@
             max-width: 400px;
             text-align: center;
             transition: background-color 0.3s ease, box-shadow 0.3s ease;
-            position: relative; /* スピナーを重ねるための基準 */
-            overflow: hidden; /* スピナーが角丸からはみ出ないように */
-        }
-
-        @keyframes fadeInContent {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            position: relative;
+            overflow: hidden;
         }
         
         .toggle-buttons {
@@ -141,8 +146,6 @@
             margin-top: 0;
             margin-bottom: 20px;
             font-weight: 500;
-            font-family: var(--font-family);
-            transition: color 0.3s ease;
         }
 
         .form-group {
@@ -156,8 +159,6 @@
             color: var(--secondary-text-color);
             font-weight: 500;
             font-size: 14px;
-            font-family: var(--font-family);
-            transition: color 0.3s ease;
         }
 
         .form-group input {
@@ -169,8 +170,7 @@
             border-radius: var(--border-radius);
             box-sizing: border-box;
             font-size: 16px;
-            font-family: var(--font-family);
-            transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+            transition: all 0.3s ease;
         }
 
         .form-group input:focus {
@@ -185,7 +185,7 @@
             flex-direction: column;
             align-items: center;
         }
-        .recaptcha-error-message {
+        .recaptcha-error-message, .passkey-error-message {
             display: none;
             color: var(--error-text-color);
             font-size: 12px;
@@ -195,201 +195,261 @@
             transition: color 0.3s ease;
         }
 
-        .submit-btn {
+        .submit-btn, .passkey-btn {
             width: 100%;
             padding: 12px;
-            background-color: var(--submit-button-bg);
-            color: var(--submit-button-text);
             border: none;
             border-radius: var(--border-radius);
             cursor: pointer;
             font-size: 16px;
             font-weight: 500;
-            font-family: var(--font-family);
-            transition: background-color 0.3s ease, color 0.3s ease;
-            margin-top: 10px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
-        .submit-btn:hover {
-            background-color: var(--submit-button-hover-bg);
+        .submit-btn {
+            background-color: var(--submit-button-bg);
+            color: var(--submit-button-text);
+            margin-top: 10px;
         }
+        .submit-btn:hover { background-color: var(--submit-button-hover-bg); }
+
+        .passkey-btn {
+            background-color: var(--passkey-button-bg);
+            color: var(--passkey-button-text);
+            border: 1px solid var(--passkey-button-border);
+        }
+        .passkey-btn:hover { background-color: var(--passkey-button-hover-bg); }
+        .passkey-btn svg { width: 20px; height: 20px; fill: currentColor; }
+        
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            color: var(--secondary-text-color);
+            font-size: 12px;
+            margin: 25px 0;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--divider-color);
+        }
+        .divider:not(:empty)::before { margin-right: .5em; }
+        .divider:not(:empty)::after { margin-left: .5em; }
 
         .disclaimer {
             font-size: 12px;
             color: var(--secondary-text-color);
             margin-top: 20px;
             line-height: 1.6;
-            font-family: var(--font-family);
-            transition: color 0.3s ease;
         }
 
-        .success-message {
+        .message-box {
             margin-top: 20px;
             padding: 12px;
-            background-color: var(--success-bg);
-            color: var(--success-text);
-            border: 1px solid var(--success-border);
+            border: 1px solid;
             border-radius: var(--border-radius);
             opacity: 0;
             display: none;
             font-weight: 500;
-            font-family: var(--font-family);
-            transition: opacity 0.5s ease-in-out, background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+            transition: all 0.5s ease-in-out;
+        }
+        .message-box.show { display: block; opacity: 1; }
+        .message-box.success {
+            background-color: var(--success-bg);
+            color: var(--success-text);
+            border-color: var(--success-border);
+        }
+        .message-box.error {
+            background-color: var(--page-bg);
+            color: var(--error-text-color);
+            border-color: var(--error-text-color);
         }
 
-        .success-message.show {
-            display: block;
-            opacity: 1;
-        }
-        
         .fade-in-item {
             opacity: 0;
-            animation-name: fadeInContent;
-            animation-duration: 0.5s;
-            animation-timing-function: ease-out;
-            animation-fill-mode: forwards;
+            animation: fadeInContent 0.5s ease-out forwards;
+        }
+        @keyframes fadeInContent {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        /* === ローディングスピナーのスタイル ここから === */
         .loader-container {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.7); /* 半透明の背景 */
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(255, 255, 255, 0.7);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 10;
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+            transition: all 0.3s ease;
         }
-        .loader-container.show {
-            opacity: 1;
-            visibility: visible;
-        }
-
+        .loader-container.show { opacity: 1; visibility: visible; }
         @media (prefers-color-scheme: dark) {
-            .loader-container {
-                background-color: rgba(30, 30, 30, 0.7); /* ダークモード用の半透明背景 */
-            }
+            .loader-container { background-color: rgba(30, 30, 30, 0.7); }
         }
-
         .loader {
-            width: 60px; /* サイズを調整 */
-            height: 60px;
+            width: 60px; height: 60px;
             animation: rotate 1s linear infinite;
-            transform-origin: center center;
         }
-
         .loader .path {
             stroke: var(--loader-color);
             stroke-linecap: round;
-            stroke-dasharray: 89 150;
-            stroke-dashoffset: 0;
+            animation: dash 1.5s ease-in-out infinite;
         }
-
-        @keyframes rotate {
-            100% {
-                transform: rotate(360deg);
-            }
+        @keyframes rotate { 100% { transform: rotate(360deg); } }
+        @keyframes dash {
+            0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
+            50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; }
+            100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
         }
-        /* === ローディングスピナーのスタイル ここまで === */
-
     </style>
 </head>
 <body>
 
     <div class="container fade-in-item" style="animation-delay: 0.1s;">
-        <!-- ローディングスピナーを追加 -->
         <div id="loaderContainer" class="loader-container">
             <svg class="loader" viewBox="0 0 50 50">
-                <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="2.5"></circle>
+                <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="4"></circle>
             </svg>
         </div>
 
-        <div class="toggle-buttons fade-in-item" style="animation-delay: 0.3s;">
+        <div class="toggle-buttons fade-in-item" style="animation-delay: 0.2s;">
             <button id="loginToggle" class="active">ログイン</button>
             <button id="signupToggle">サインアップ</button>
         </div>
 
-        <h2 id="formTitle" class="fade-in-item" style="animation-delay: 0.4s;">ログイン</h2>
+        <h2 id="formTitle" class="fade-in-item" style="animation-delay: 0.3s;">ログイン</h2>
+
+        <div id="messageBox" class="message-box"></div>
 
         <form id="authForm">
-            <div class="form-group fade-in-item" style="animation-delay: 0.5s;">
+            <div class="form-group fade-in-item" style="animation-delay: 0.4s;">
                 <label for="email">メールアドレス</label>
-                <input type="email" id="email" name="email" required>
+                <input type="email" id="email" name="email" required autocomplete="username webauthn">
             </div>
-            <div class="form-group fade-in-item" style="animation-delay: 0.6s;">
+            <div id="passwordGroup" class="form-group fade-in-item" style="animation-delay: 0.5s;">
                 <label for="password">パスワード</label>
-                <input type="password" id="password" name="password" required>
+                <input type="password" id="password" name="password" required autocomplete="current-password">
             </div>
 
-            <div class="g-recaptcha-container fade-in-item" style="animation-delay: 0.65s;">
-                <div class="g-recaptcha" data-sitekey="6Lf_hz4rAAAAAMLfawjLSSH0qRJyCnOnX9OuJBtR"></div>
+            <div id="recaptchaContainer" class="g-recaptcha-container fade-in-item" style="animation-delay: 0.6s;">
+                <div class="g-recaptcha" data-sitekey="6LdJ0yApAAAAAH45O64a51Jpr-wAFMy_y4cN4g5p"></div>
                 <div id="recaptchaError" class="recaptcha-error-message">reCAPTCHAをチェックしてください。</div>
             </div>
 
             <button type="submit" id="submitButton" class="submit-btn fade-in-item" style="animation-delay: 0.7s;">ログイン</button>
         </form>
 
-        <p class="disclaimer fade-in-item" style="animation-delay: 0.8s;">
-            <strong>【ご注意】これはデモページです。実際のメールアドレスやパスワードは入力しないでください。</strong><br>
-            このサイトはデモなので、サーバーに情報が送られることはありません。ご安心ください。<br>
-            reCAPTCHAはボット対策のためのデモ機能です。(実際の検証はサーバーサイドで行われます)
-        </p>
+        <div class="divider fade-in-item" style="animation-delay: 0.75s;">または</div>
 
-        <div id="successMessage" class="success-message">
-            <!-- メッセージはJSで設定 -->
-        </div>
+        <button type="button" id="passkeyButton" class="passkey-btn fade-in-item" style="animation-delay: 0.8s;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17.5 8.5h-11a3.5 3.5 0 0 0 0 7h11a3.5 3.5 0 0 0 0-7zm-11 5.5a2 2 0 1 1 2-2 2 2 0 0 1-2 2zM21 12l-2-2v1.5h-1v-5a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5h1V14l2-2z"/></svg>
+            <span id="passkeyButtonText">パスキーでログイン</span>
+        </button>
+
+        <p class="disclaimer fade-in-item" style="animation-delay: 0.9s;">
+            <strong>【ご注意】これはデモページです。</strong><br>
+            パスキー情報は、お使いのブラウザのローカルストレージにのみ保存され、サーバーには送信されません。実際のメールアドレスやパスワードは入力しないでください。
+        </p>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // 要素の取得
             const loginToggle = document.getElementById('loginToggle');
             const signupToggle = document.getElementById('signupToggle');
             const formTitle = document.getElementById('formTitle');
             const submitButton = document.getElementById('submitButton');
             const authForm = document.getElementById('authForm');
-            const successMessage = document.getElementById('successMessage');
             const emailInput = document.getElementById('email');
             const passwordInput = document.getElementById('password');
+            const passwordGroup = document.getElementById('passwordGroup');
+            const recaptchaContainer = document.getElementById('recaptchaContainer');
             const recaptchaError = document.getElementById('recaptchaError');
-            const loaderContainer = document.getElementById('loaderContainer'); // スピナーのコンテナを取得
-
+            const loaderContainer = document.getElementById('loaderContainer');
+            const messageBox = document.getElementById('messageBox');
+            const passkeyButton = document.getElementById('passkeyButton');
+            const passkeyButtonText = document.getElementById('passkeyButtonText');
+            
             let currentMode = 'login'; 
 
-            function updateFormMode() {
-                if (currentMode === 'login') {
-                    formTitle.textContent = 'ログイン';
-                    submitButton.textContent = 'ログイン';
-                    loginToggle.classList.add('active');
-                    signupToggle.classList.remove('active');
-                } else {
-                    formTitle.textContent = 'サインアップ';
-                    submitButton.textContent = 'サインアップ';
-                    signupToggle.classList.add('active');
-                    loginToggle.classList.remove('active');
+            // --- WebAuthn ヘルパー関数 ---
+            // ArrayBuffer を Base64URL 文字列にエンコード
+            const bufferToBase64url = (buffer) => {
+                return btoa(String.fromCharCode.apply(null, new Uint8Array(buffer)))
+                    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+            };
+
+            // Base64URL 文字列を ArrayBuffer にデコード
+            const base64urlToBuffer = (base64urlString) => {
+                const base64 = base64urlString.replace(/-/g, '+').replace(/_/g, '/');
+                const raw = atob(base64);
+                const buffer = new Uint8Array(raw.length);
+                for (let i = 0; i < raw.length; i++) {
+                    buffer[i] = raw.charCodeAt(i);
                 }
+                return buffer;
+            };
+
+            // UI更新
+            const updateFormMode = () => {
+                const isLogin = currentMode === 'login';
+                formTitle.textContent = isLogin ? 'ログイン' : 'サインアップ';
+                submitButton.textContent = isLogin ? 'ログイン' : 'サインアップ';
+                passkeyButtonText.textContent = isLogin ? 'パスキーでログイン' : 'パスキーを作成';
+                
+                loginToggle.classList.toggle('active', isLogin);
+                signupToggle.classList.toggle('active', !isLogin);
+                
+                // サインアップ時はreCAPTCHAを必須に（デモとして）
+                recaptchaContainer.style.display = isLogin ? 'none' : 'flex';
+
+                resetFormState();
+            };
+            
+            // フォームの状態をリセット
+            const resetFormState = () => {
                 authForm.reset();
                 if (typeof grecaptcha !== 'undefined' && grecaptcha.reset) {
-                    try {
-                        grecaptcha.reset();
-                    } catch (e) {
-                        console.warn("reCAPTCHA reset failed, widget might not be ready.");
-                    }
+                    try { grecaptcha.reset(); } catch (e) { console.warn("reCAPTCHA reset failed."); }
                 }
                 recaptchaError.style.display = 'none';
-                successMessage.classList.remove('show');
-                successMessage.style.display = 'none'; 
+                messageBox.classList.remove('show', 'success', 'error');
+                
                 emailInput.disabled = false;
                 passwordInput.disabled = false;
                 submitButton.disabled = false;
-                loaderContainer.classList.remove('show'); // フォーム切り替え時にスピナーを非表示
-            }
+                passkeyButton.disabled = false;
+                loaderContainer.classList.remove('show');
+            };
 
+            // メッセージ表示
+            const showMessage = (text, type = 'success') => {
+                messageBox.textContent = text;
+                messageBox.className = 'message-box'; // reset classes
+                messageBox.classList.add(type, 'show');
+            };
+
+            // ローディング表示
+            const showLoader = (show) => {
+                loaderContainer.classList.toggle('show', show);
+                const disable = show;
+                emailInput.disabled = disable;
+                passwordInput.disabled = disable;
+                submitButton.disabled = disable;
+                passkeyButton.disabled = disable;
+            };
+
+            // --- イベントリスナー ---
             loginToggle.addEventListener('click', () => {
                 if (currentMode !== 'login') {
                     currentMode = 'login';
@@ -404,59 +464,184 @@
                 }
             });
 
+            // パスワード/reCAPTCHAフォームの送信処理
             authForm.addEventListener('submit', (event) => {
-                event.preventDefault(); 
-
+                event.preventDefault();
                 const email = emailInput.value;
                 const password = passwordInput.value;
-                const recaptchaResponse = (typeof grecaptcha !== 'undefined') ? grecaptcha.getResponse() : 'test_mode_no_grecaptcha';
-
-                recaptchaError.style.display = 'none';
-
+                
                 if (!email || !password) {
-                    alert('メールアドレスとパスワードを入力してください。');
+                    showMessage('メールアドレスとパスワードを入力してください。', 'error');
                     return;
                 }
                 if (!email.includes('@')) {
-                     alert('有効なメールアドレスを入力してください。');
+                    showMessage('有効なメールアドレスを入力してください。', 'error');
                     return;
                 }
-                if (typeof grecaptcha !== 'undefined' && recaptchaResponse.length === 0) {
-                    recaptchaError.style.display = 'block';
+
+                if (currentMode === 'signup') {
+                    const recaptchaResponse = (typeof grecaptcha !== 'undefined') ? grecaptcha.getResponse() : null;
+                    if (recaptchaResponse && recaptchaResponse.length === 0) {
+                        recaptchaError.style.display = 'block';
+                        return;
+                    }
+                }
+                
+                recaptchaError.style.display = 'none';
+                showLoader(true);
+
+                setTimeout(() => {
+                    showLoader(false);
+                    const message = currentMode === 'login' ? 'ログインが完了しました！' : 'サインアップが完了しました！';
+                    showMessage(message, 'success');
+                    // 成功後は操作できないようにする
+                    submitButton.disabled = true;
+                    passkeyButton.disabled = true;
+                }, 1500);
+            });
+            
+            // パスキーボタンのクリック処理
+            passkeyButton.addEventListener('click', () => {
+                if (currentMode === 'login') {
+                    handlePasskeyLogin();
+                } else {
+                    handlePasskeySignup();
+                }
+            });
+
+            // --- パスキー処理 ---
+            // パスキー登録（サインアップ）
+            async function handlePasskeySignup() {
+                const email = emailInput.value;
+                if (!email || !email.includes('@')) {
+                    showMessage('パスキーを作成するには、有効なメールアドレスを入力してください。', 'error');
                     return;
                 }
                 
-                // --- ローディング処理 ---
-                loaderContainer.classList.add('show'); // スピナーを表示
-                emailInput.disabled = true;
-                passwordInput.disabled = true;
-                submitButton.disabled = true;
+                // 既にそのメールアドレスでパスキーが登録されているかチェック（デモ用）
+                if (localStorage.getItem(`passkey_credential_${email}`)) {
+                    showMessage('このメールアドレスは既にパスキーが登録されています。', 'error');
+                    return;
+                }
 
+                showLoader(true);
 
-                // サーバー通信をシミュレート
-                setTimeout(() => {
-                    loaderContainer.classList.remove('show'); // スピナーを非表示
+                try {
+                    // サーバーから取得する情報をクライアントで生成（デモ）
+                    const challenge = window.crypto.getRandomValues(new Uint8Array(32));
+                    const userId = window.crypto.getRandomValues(new Uint8Array(16));
 
-                    let messageText = '';
-                    if (currentMode === 'login') {
-                        messageText = 'ログインが完了しました！';
-                    } else {
-                        messageText = 'サインアップが完了しました！';
-                    }
-                    
-                    successMessage.textContent = messageText;
-                    successMessage.style.display = 'block'; 
-                    requestAnimationFrame(() => {
-                        requestAnimationFrame(() => { 
-                             successMessage.classList.add('show');
-                        });
+                    const publicKeyCredentialCreationOptions = {
+                        challenge: challenge,
+                        rp: {
+                            name: "デモサイト",
+                            id: window.location.hostname,
+                        },
+                        user: {
+                            id: userId,
+                            name: email,
+                            displayName: email,
+                        },
+                        pubKeyCredParams: [
+                            { type: "public-key", alg: -7 }, // ES256
+                            { type: "public-key", alg: -257 } // RS256
+                        ],
+                        authenticatorSelection: {
+                            authenticatorAttachment: "platform", // or "cross-platform"
+                            requireResidentKey: true,
+                            userVerification: "preferred",
+                        },
+                        timeout: 60000,
+                        attestation: "direct"
+                    };
+
+                    const credential = await navigator.credentials.create({
+                        publicKey: publicKeyCredentialCreationOptions
                     });
 
-                    // フォームフィールドとボタンは無効のままにする
-                }, 1500); // 1.5秒の遅延
-            });
+                    // 本来はサーバーにcredentialを送信して検証・保存する
+                    // 今回はデモなのでlocalStorageに保存
+                    localStorage.setItem(`passkey_credential_${email}`, JSON.stringify({
+                        id: bufferToBase64url(credential.rawId),
+                        publicKey: bufferToBase64url(credential.response.getPublicKey()),
+                        // ユーザーハンドルも保存しておくと認証時に役立つ場合がある
+                        userHandle: bufferToBase64url(publicKeyCredentialCreationOptions.user.id)
+                    }));
 
+                    showLoader(false);
+                    showMessage(`パスキーが作成されました！「${email}」でログインできます。`);
+
+                } catch (err) {
+                    showLoader(false);
+                    console.error("パスキー作成エラー:", err);
+                    if (err.name === 'NotAllowedError') {
+                        showMessage('パスキーの作成がキャンセルされました。', 'error');
+                    } else {
+                        showMessage(`パスキーの作成に失敗しました: ${err.message}`, 'error');
+                    }
+                }
+            }
+
+            // パスキー認証（ログイン）
+            async function handlePasskeyLogin() {
+                showLoader(true);
+                try {
+                    // サーバーから取得するチャレンジをクライアントで生成（デモ）
+                    const challenge = window.crypto.getRandomValues(new Uint8Array(32));
+
+                    const publicKeyCredentialRequestOptions = {
+                        challenge: challenge,
+                        rpId: window.location.hostname,
+                        userVerification: "preferred",
+                        timeout: 60000,
+                    };
+                    
+                    const assertion = await navigator.credentials.get({
+                        publicKey: publicKeyCredentialRequestOptions
+                    });
+
+                    // 本来はassertionをサーバーに送信し、署名を検証する
+                    // デモなので、成功したことだけを確認
+                    const userHandleB64 = assertion.response.userHandle ? bufferToBase64url(assertion.response.userHandle) : null;
+                    let userEmail = "不明なユーザー";
+
+                    // localStorageからユーザーを探す（デモ用）
+                    if(userHandleB64) {
+                        for(let i=0; i < localStorage.length; i++) {
+                            const key = localStorage.key(i);
+                            if(key.startsWith('passkey_credential_')) {
+                                const storedCred = JSON.parse(localStorage.getItem(key));
+                                if (storedCred.userHandle === userHandleB64) {
+                                    userEmail = key.replace('passkey_credential_', '');
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    showLoader(false);
+                    showMessage(`ようこそ、${userEmail}さん！パスキーでのログインに成功しました。`);
+
+                } catch (err) {
+                    showLoader(false);
+                    console.error("パスキー認証エラー:", err);
+                    if (err.name === 'NotAllowedError') {
+                        showMessage('パスキー認証がキャンセルされました。', 'error');
+                    } else {
+                        showMessage(`パスキー認証に失敗しました。登録されていないか、別のエラーが発生しました。`, 'error');
+                    }
+                }
+            }
+
+            // 初期化
             updateFormMode();
+            // WebAuthn対応チェック
+            if (!window.PublicKeyCredential) {
+                passkeyButton.style.display = 'none';
+                const divider = document.querySelector('.divider');
+                if(divider) divider.style.display = 'none';
+                console.warn("このブラウザはWebAuthnをサポートしていません。");
+            }
         });
     </script>
 
